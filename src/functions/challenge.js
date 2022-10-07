@@ -65,42 +65,79 @@ const paddockManagers = [
   
   // 0 Arreglo con los ids de los responsables de cada cuartel, ordenados de menor a mayor
   export const listPaddockManagerIds = () => {
-    
+    return paddockManagers.sort((a, b) => a.id - b.id).map(manager => manager.id);
   }
   
   // 1 Arreglo con los ruts de los responsables de los cuarteles, ordenados por nombre
   export const listPaddockManagersByName = () => {
-    
+    return paddockManagers.sort((a, b) => a.name.localeCompare(b.name)).map(manager => manager.taxNumber)
   }
   
   // 2 Arreglo con los nombres de cada tipo de cultivo, ordenados decrecientemente por la suma TOTAL de la cantidad de hectáreas plantadas de cada uno de ellos.
   export const sortPaddockTypeByTotalArea = () => {
-    
+    let paddockTypeByTotalArea = [...paddockType];
+    paddockTypeByTotalArea.forEach((type) => {
+      let totalArea = 0;
+      for (const paddock of paddocks) {
+        if (paddock.paddockTypeId === type.id) totalArea += paddock.area;
+      }
+      type.totalArea = totalArea;
+    });
+    return paddockTypeByTotalArea.sort((a, b) => b.totalArea - a.totalArea).map(paddock => paddock.name);
   }
   
   // 3 Arreglo con los nombres de los administradores, ordenados decrecientemente por la suma TOTAL de hectáreas que administran.
   export const sortFarmManagerByAdminArea = () => {
-    
+    let farmManagerByAdminArea = [...paddockManagers];
+    farmManagerByAdminArea.forEach((manager) => {
+      let totalArea = 0;
+      for (const paddock of paddocks) {
+        if (paddock.paddockManagerId === manager.id) totalArea += paddock.area;
+      }
+      manager.totalArea = totalArea;
+    });
+    return farmManagerByAdminArea.sort((a, b) => b.totalArea - a.totalArea).map(manager => manager.name);
   }
   
   // 4 Objeto en que las claves sean los nombres de los campos y los valores un arreglo con los ruts de sus administradores ordenados alfabéticamente por nombre.
   export const farmManagerNames = () => {
-   
+    return farms.map((farm) => ({
+      [farm.name]: paddockManagers.filter((manager) => {
+        for (const paddock of paddocks) {
+          if(paddock.farmId === farm.id && paddock.paddockManagerId === manager.id) return true;
+        }
+      }).map(manager => manager.taxNumber),
+    })).reduce((obj, item) => Object.assign(obj, { [Object.keys(item)[0]]: Object.values(item)[0] }), {});
   }
   
   // 5 Arreglo ordenado decrecientemente con los m2 totales de cada campo que tengan más de 2 hectáreas en Paltos
   export const biggestAvocadoFarms = () => {
-
+    let farmsByTotalArea = [...farms];
+    farmsByTotalArea.forEach((farm) => {
+      let totalArea = 0;
+      for (const paddock of paddocks) {
+        if (paddock.farmId === farm.id && paddock.paddockTypeId === 1) totalArea += paddock.area;
+      }
+      farm.totalArea = totalArea;
+    });
+    return farmsByTotalArea.filter((farm) => farm.totalArea > 20000).map(paddock => paddock.totalArea).sort((a, b) => b - a);
   }
   
-  // 6 Arreglo con nombres de los administradores de la FORESTAL Y AGRÍCOLA LO ENCINA, ordenados por nombre, que trabajen más de 1000 m2 de Cerezas
+  // 6 Arreglo con nombres de los administradores de la FORESTAL Y AGRÍCOLA LO ENCINA, ordenados por nombre, que trabajen más de 1000 m2 de Cerezas en ese mismo campo.
   export const biggestCherriesManagers = () => {
-    
+    let validManagers = paddocks.filter((paddock) => paddock.paddockTypeId === 3 && paddock.area > 1000 && paddock.farmId === 3).map(paddock => paddock.paddockManagerId);
+    return paddockManagers.filter((manager) => validManagers.includes(manager.id)).sort((a, b) => a.name - b.name).map(manager => manager.name);
   }
   
   // 7 Objeto en el cual las claves sean el nombre del administrador y el valor un arreglo con los nombres de los campos que administra, ordenados alfabéticamente
   export const farmManagerPaddocks = () => {
-    
+    return paddockManagers.map((manager) => ({
+      [manager.name]: farms.filter((farm) => {
+        for (const paddock of paddocks) {
+          if(paddock.farmId === farm.id && paddock.paddockManagerId === manager.id) return true;
+        }
+      }).map(farm => farm.name).sort((a, b) => a.localeCompare(b)),
+    })).reduce((obj, item) => Object.assign(obj, { [Object.keys(item)[0]]: Object.values(item)[0] }), {});
   }
   
   // 8 Objeto en que las claves sean el tipo de cultivo concatenado con su año de plantación (la concatenación tiene un separador de guión ‘-’, por ejemplo AVELLANOS-2020) y el valor otro objeto en el cual la clave sea el id del administrador y el valor el nombre del administrador
